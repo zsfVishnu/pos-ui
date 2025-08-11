@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, CartState, MenuItem, Variant, AddOn } from '@/types/menu';
 
+const TAX_RATE = 0.08; // 8% tax rate
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
@@ -10,16 +11,12 @@ export const useCartStore = create<CartState>()(
       addItem: (item: MenuItem, variant?: Variant, addOns: AddOn[] = []) => {
         const { items } = get();
         
-        // Debug logging to see the item structure
-        console.log('Adding item to cart:', item);
-        console.log('Item pricing:', item.pricing);
-        
         // Safely get the base price with fallback
         const basePrice = item.pricing?.basePrice || 0;
         
-        if (basePrice === 0) {
-          console.warn('Warning: Item has no base price:', item);
-        }
+        const itemPrice = basePrice + 
+          (variant?.priceDelta || 0) + 
+          addOns.reduce((sum, addOn) => sum + addOn.price, 0);
         
         const existingItemIndex = items.findIndex(
           (cartItem) => 
@@ -33,7 +30,11 @@ export const useCartStore = create<CartState>()(
           set({
             items: items.map((cartItem, index) =>
               index === existingItemIndex
-                ? { ...cartItem, quantity: cartItem.quantity + 1 }
+                ? { 
+                    ...cartItem, 
+                    quantity: cartItem.quantity + 1,
+                    lineTotal: itemPrice * (cartItem.quantity + 1)
+                  }
                 : cartItem
             ),
           });
@@ -45,6 +46,7 @@ export const useCartStore = create<CartState>()(
             quantity: 1,
             variant,
             addOns,
+            lineTotal: itemPrice,
           };
           set({ items: [...items, newCartItem] });
         }
@@ -60,9 +62,18 @@ export const useCartStore = create<CartState>()(
           return;
         }
         
+        const item = get().items.find(item => item.id === itemId);
+        if (!item) return;
+        
+        const itemPrice = item.basePrice + 
+          (item.variant?.priceDelta || 0) + 
+          item.addOns.reduce((sum, addOn) => sum + addOn.price, 0);
+        
         set({
           items: get().items.map(item =>
-            item.id === itemId ? { ...item, quantity } : item
+            item.id === itemId 
+              ? { ...item, quantity, lineTotal: itemPrice * quantity }
+              : item
           ),
         });
       },
@@ -71,13 +82,20 @@ export const useCartStore = create<CartState>()(
         set({ items: [] });
       },
 
+      getSubtotal: () => {
+        return get().items.reduce((total, item) => total + item.lineTotal, 0);
+      },
+
+      getTax: () => {
+        return get().getSubtotal() * TAX_RATE;
+      },
+
       getTotal: () => {
-        return get().items.reduce((total, item) => {
-          const itemPrice = item.basePrice + 
-            (item.variant?.priceDelta || 0) + 
-            item.addOns.reduce((sum, addOn) => sum + addOn.price, 0);
-          return total + (itemPrice * item.quantity);
-        }, 0);
+        return get().getSubtotal() + get().getTax();
+      },
+
+      getItemCount: () => {
+        return get().items.reduce((sum, item) => sum + item.quantity, 0);
       },
     }),
     {

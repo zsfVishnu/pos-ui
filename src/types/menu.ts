@@ -22,6 +22,13 @@ export interface MenuItem {
   dietaryTags?: string[];
   pricing: Money & { variants?: Variant[] };
   addOns?: AddOn[];
+  category: string;
+  tags?: string[];
+  spiceLevel?: number;
+  image?: string;
+  isPopular?: boolean;
+  isTrending?: boolean;
+  isSpicy?: boolean;
 }
 
 export interface MenuSection {
@@ -36,7 +43,7 @@ export interface MenuResponse {
   };
 }
 
-export type FilterType = 'vegetarian' | 'gluten_free' | 'beverages' | 'mains';
+export type FilterType = 'vegetarian' | 'gluten_free' | 'vegan' | 'beverages' | 'mains' | 'spicy' | 'popular' | 'trending';
 
 export interface CartItem {
   id: string;
@@ -45,6 +52,8 @@ export interface CartItem {
   quantity: number;
   variant?: Variant;
   addOns: AddOn[];
+  modifiers?: string[];
+  lineTotal: number;
 }
 
 export interface CartState {
@@ -54,4 +63,33 @@ export interface CartState {
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   getTotal: () => number;
+  getSubtotal: () => number;
+  getTax: () => number;
+  getItemCount: () => number;
+}
+
+export interface Review {
+  id: string;
+  author: string;
+  rating: number;
+  date: string;
+  text: string;
+  source: string;
+}
+
+export interface CafeSummary {
+  name: string;
+  tagline: string;
+  about: string;
+  heroImage?: string;
+}
+
+export type SortOption = 'popularity' | 'price-low' | 'price-high' | 'newest';
+
+export interface MenuFilters {
+  category: string;
+  dietary: string[];
+  spiceLevel: number[];
+  priceRange: [number, number];
+  search: string;
 }

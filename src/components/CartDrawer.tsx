@@ -9,10 +9,12 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
-  const { items, removeItem, updateQuantity, clearCart, getTotal } = useCartStore();
+  const { items, removeItem, updateQuantity, clearCart, getTotal, getSubtotal, getTax, getItemCount } = useCartStore();
   
   const total = getTotal();
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = getSubtotal();
+  const tax = getTax();
+  const itemCount = getItemCount();
 
   if (!isOpen) return null;
 
@@ -46,16 +48,22 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           <div className="flex-1 overflow-y-auto p-4">
             {items.length === 0 ? (
               <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 text-gray-300">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+                  </svg>
+                </div>
                 <p className="text-gray-500">Your cart is empty</p>
+                <p className="text-sm text-gray-400 mt-2">Add some delicious items to get started!</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div key={`${item.id}-${item.variant?.id || 'no-variant'}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="flex-1">
                       <h3 className="font-medium text-gray-900">{item.name}</h3>
                       {item.variant && (
-                        <p className="text-sm text-gray-600">{item.variant.name}</p>
+                        <p className="text-sm text-gray-600">Size: {item.variant.name}</p>
                       )}
                       {item.addOns.length > 0 && (
                         <p className="text-sm text-gray-600">
@@ -63,17 +71,13 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         </p>
                       )}
                       <p className="text-sm font-medium text-gray-900">
-                        {formatMoney(
-                          item.basePrice + 
-                          (item.variant?.price_delta || 0) + 
-                          item.addOns.reduce((sum, a) => sum + a.price, 0)
-                        )}
+                        {formatMoney(item.lineTotal / item.quantity)} each
                       </p>
                     </div>
                     
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(`${item.id}-${item.variant?.id || 'no-variant'}`, item.quantity - 1)}
                         className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100"
                         aria-label="Decrease quantity"
                       >
@@ -81,7 +85,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       </button>
                       <span className="w-8 text-center font-medium">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(`${item.id}-${item.variant?.id || 'no-variant'}`, item.quantity + 1)}
                         className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100"
                         aria-label="Increase quantity"
                       >
@@ -90,7 +94,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     </div>
                     
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeItem(`${item.id}-${item.variant?.id || 'no-variant'}`)}
                       className="text-red-500 hover:text-red-700 p-1"
                       aria-label="Remove item"
                     >
@@ -107,6 +111,18 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           {/* Footer */}
           {items.length > 0 && (
             <div className="border-t border-gray-200 p-4 space-y-3">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-900">{formatMoney(subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tax</span>
+                  <span className="text-gray-900">{formatMoney(tax)}</span>
+                </div>
+                <hr className="border-gray-200" />
+              </div>
+              
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">Total ({itemCount} items)</span>
                 <span className="text-xl font-bold text-gray-900">
@@ -122,11 +138,12 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   Clear Cart
                 </button>
                 <button
+                  disabled={items.length === 0}
                   onClick={() => {
                     // Placeholder for checkout
                     alert('Checkout functionality coming soon!');
                   }}
-                  className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="flex-1 py-2 px-4 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   Checkout
                 </button>
