@@ -6,7 +6,7 @@ const menuData: MenuResponse = {
     "sections": [
       {
         "id": "sec_coolers",
-        "title": "Coolers & Iced Teas",
+        "title": "Coolers & Iced Tea",
         "items": [
           {
             "id": "itm_peach_passion_iced_tea",
